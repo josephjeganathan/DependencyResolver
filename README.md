@@ -1,0 +1,4 @@
+DependencyResolver
+==================
+
+Generic dependency resolver
