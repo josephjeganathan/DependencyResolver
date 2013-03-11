@@ -1,37 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace DependencyResolver
 {
     public class Resolver<TEntity>
     {
         private readonly List<Node<TEntity>> _nodes;
-        private readonly Func<TEntity, IEnumerable<TEntity>> _getAdjacentEntities;
+        private readonly Func<TEntity, IEnumerable<TEntity>> _getDependentEntities;
 
-        public Resolver(Func<TEntity, IEnumerable<TEntity>> getAdjacentEntities)
+        public Resolver(Func<TEntity, IEnumerable<TEntity>> getDependentEntities)
         {
             _nodes = new List<Node<TEntity>>();
-            _getAdjacentEntities = getAdjacentEntities;
+            _getDependentEntities = getDependentEntities;
         }
 
         public void AddEntity(TEntity entity)
         {
             Node<TEntity> node = GetOrCreate(entity);
 
-            //Add adjacent entities
-            IEnumerable<TEntity> adjacentEntities = _getAdjacentEntities(entity);
+            //Add dependent entities
+            IEnumerable<TEntity> adjacentEntities = _getDependentEntities(entity);
             foreach (TEntity adjacentEntity in adjacentEntities)
             {
                 Node<TEntity> adjacentNode = GetOrCreate(adjacentEntity);
-                node.AddAdjacent(adjacentNode);
+                node.AddDependentNode(adjacentNode);
             }
         }
 
         public Queue<TEntity> Resolve()
         {
-            Queue<TEntity> resolvedQueue = new Queue<TEntity>();
+            var resolvedQueue = new Queue<TEntity>();
             var resolvedLists = _nodes.Select(ResolveForNode);
             foreach (List<Node<TEntity>> resolvedList in resolvedLists.OrderByDescending(nl => nl.Count))
             {
@@ -48,8 +47,8 @@ namespace DependencyResolver
 
         private List<Node<TEntity>> ResolveForNode(Node<TEntity> node)
         {
-            List<Node<TEntity>> resolved = new List<Node<TEntity>>();
-            List<Node<TEntity>> unresolved = new List<Node<TEntity>>();
+            var resolved = new List<Node<TEntity>>();
+            var unresolved = new List<Node<TEntity>>();
             Resolve(node, resolved, unresolved);
             return resolved;
         }
@@ -84,19 +83,19 @@ namespace DependencyResolver
         private class Node<T>
         {
             private readonly T _underlyingEntity;
-            private readonly List<Node<T>> _adjacentNodes;
-            public IEnumerable<Node<T>> AdjacentNodes { get { return _adjacentNodes.AsReadOnly(); } }
+            private readonly List<Node<T>> _dependantNodes;
+            public IEnumerable<Node<T>> AdjacentNodes { get { return _dependantNodes.AsReadOnly(); } }
             public T UnderlyingEntity { get { return _underlyingEntity; } }
 
             public Node(T underlyingEntity)
             {
                 _underlyingEntity = underlyingEntity;
-                _adjacentNodes = new List<Node<T>>();
+                _dependantNodes = new List<Node<T>>();
             }
 
-            public void AddAdjacent(Node<T> node)
+            public void AddDependentNode(Node<T> node)
             {
-                _adjacentNodes.Add(node);
+                _dependantNodes.Add(node);
             }
         }
     }
